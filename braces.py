@@ -13,23 +13,39 @@ BRACES = {k: v for k, v in zip(OPENER_LIST, CLOSER_LIST)}
 BRACES_REV = {v: k for k, v in BRACES.items()}
 
 
-def count_test(brace_type: str, test_string: str):
-    print(f"Testing {brace_type} brace count...")
-    assert test_string.count(brace_type) == test_string.count(BRACES[brace_type])
+def count_test(test_string: str):
+    for brace_type in OPENER_LIST:
+        count_test_by_brace(brace_type, test_string)
+
+
+def count_test_by_brace(brace_type: str, test_string: str):
+    print(f"\rTesting {brace_type} brace count...", end="")
+    assert test_string.count(brace_type) == test_string.count(BRACES[brace_type]),\
+        f"Brace {brace_type} count is wrong!"
 
 
 def sequence_test(test_string: str):
     brace_count_by_type = {k: 0 for k in OPENER_LIST}
-    print("Now testing char by char...\n")
+    print("\rTesting char by char...\n")
+    currently_opened_brace, previously_opened_brace = None, None
     for idx, i in enumerate(test_string):
-        print(test_string[:idx])
+        print(f"\r{test_string[:idx+1]}", end="")
         if i in OPENER_LIST:
             brace_count_by_type[i] += 1
-            currently_opened_brace = i
+            if isinstance(currently_opened_brace, str):
+                previously_opened_brace, currently_opened_brace = currently_opened_brace, i
+            else:
+                currently_opened_brace = i
         elif i in CLOSER_LIST:
-            assert currently_opened_brace == BRACES_REV[i], "Unexpected closing brace!"
+            if currently_opened_brace != BRACES_REV[i]:
+                print("\nUnexpected closing brace!")
+                sys.exit(2)
+            elif brace_count_by_type[BRACES_REV[i]] < 1:
+                print("\nToo many closing braces!")
+                sys.exit(2)
             brace_count_by_type[BRACES_REV[i]] -= 1
-            assert brace_count_by_type[BRACES_REV[i]] >= 0, "Too many closing braces!"
+            currently_opened_brace = previously_opened_brace
+    print("The string is fine!")
 
 
 def find_first_brace(test_string: str):
@@ -92,8 +108,7 @@ def main():
     print(f"Test string is {cut_string}")
 
     # quick count test
-    for brace_type in OPENER_LIST:
-        count_test(brace_type, cut_string)
+    count_test(cut_string)
 
     # char-by-char test
     sequence_test(cut_string)
